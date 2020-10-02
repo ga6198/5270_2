@@ -1,5 +1,6 @@
 from Crypto.Cipher import DES, DES3, AES
 from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
 from bitstring import BitArray
 import time
 import os
@@ -31,7 +32,7 @@ def decrypt_des_ecb(p_bytes):
     with open("des_ecb_decrypt.txt", 'ab') as output_file:
         output_file.write(msg)
 
-des_iv = None
+des_iv = get_random_bytes(8)
 def encrypt_des_cbc(p_bytes):
     BLOCK_SIZE = 8 # bytes
     key = b"\x00\x00\x00\x00\x00\x00\x00\x10" #0000000000000000000000000000000000000000000000000000000000000010
@@ -48,7 +49,6 @@ def decrypt_des_cbc(p_bytes):
     BLOCK_SIZE = 8 # bytes
     key = b"\x00\x00\x00\x00\x00\x00\x00\x10"
     decipher = DES.new(key, DES.MODE_CBC, iv=des_iv)
-    print(des_iv)
     msg = decipher.decrypt(p_bytes)
 
     with open("des_cbc_decrypt.txt", 'ab') as output_file:
@@ -75,10 +75,11 @@ def decrypt_3des_ecb(p_bytes):
     with open("des3_ecb_decrypt.txt", 'ab') as output_file:
         output_file.write(msg)
 
+des3_iv = get_random_bytes(8)
 def encrypt_3des_cbc(p_bytes):
     BLOCK_SIZE = 8 # bytes
     key = DES3.adjust_key_parity("abcdefghijklmnop".encode('utf8'))
-    cipher = DES3.new(key, DES3.MODE_CBC)
+    cipher = DES3.new(key, DES3.MODE_CBC, iv=des3_iv)
 
     msg = cipher.encrypt(pad(p_bytes, BLOCK_SIZE))
 
@@ -88,7 +89,7 @@ def encrypt_3des_cbc(p_bytes):
 def decrypt_3des_cbc(p_bytes):
     BLOCK_SIZE = 8 # bytes
     key = DES3.adjust_key_parity("abcdefghijklmnop".encode('utf8'))
-    decipher = DES3.new(key, DES3.MODE_CBC)
+    decipher = DES3.new(key, DES3.MODE_CBC, iv=des3_iv)
     msg = decipher.decrypt(p_bytes)
     
 
@@ -114,10 +115,11 @@ def decrypt_aes_ecb(p_bytes):
     with open("aes_ecb_decrypt.txt", 'ab') as output_file:
         output_file.write(msg)
 
+aes_iv = get_random_bytes(16)
 def encrypt_aes_cbc(p_bytes):
     BLOCK_SIZE = 16 #bytes
     key = "abcdefghijklmnop"
-    cipher = AES.new(key.encode('utf8'), AES.MODE_CBC)
+    cipher = AES.new(key.encode('utf8'), AES.MODE_CBC, iv=aes_iv)
     msg = cipher.encrypt(pad(p_bytes, BLOCK_SIZE))
 
     with open("aes_cbc.txt", 'ab') as output_file:
@@ -126,7 +128,7 @@ def encrypt_aes_cbc(p_bytes):
 def decrypt_aes_cbc(p_bytes):
     BLOCK_SIZE = 16 # bytes
     key = "abcdefghijklmnop"
-    decipher = AES.new(key.encode('utf8'), AES.MODE_CBC)
+    decipher = AES.new(key.encode('utf8'), AES.MODE_CBC, iv=aes_iv)
     msg = decipher.decrypt(p_bytes)
     
 
@@ -136,29 +138,23 @@ def decrypt_aes_cbc(p_bytes):
 def encrypt(encrypt_fn):
     total_time = 0
     data_size = 0 #in bytes
-
-    buffer_size = 65536 # bytes, 64 kb
     
     with open("plain.txt", "rb") as f:    
-        p_bytes = f.read(buffer_size)
-        #counter = 0
-        while len(p_bytes) > 0:
-            #get start time
-            start_time = time.time()
+        p_bytes = f.read()
+        
+        #get start time
+        start_time = time.time()
 
-            #encrypt
-            encrypt_fn(p_bytes)
+        #encrypt
+        encrypt_fn(p_bytes)
 
-            #get end time
-            end_time = time.time()
+        #get end time
+        end_time = time.time()
 
-            #add total time and data calculations
-            total_time += (end_time - start_time)
-            
-            data_size += len(p_bytes) # bytes
-
-            #repeat the process for the next set of bytes
-            p_bytes = f.read(buffer_size)
+        #add total time and data calculations
+        total_time += (end_time - start_time)
+        
+        data_size += len(p_bytes) # bytes
 
     throughput_in_bytes, throughput_in_bits = calculate_throughput(total_time, data_size)
     return throughput_in_bytes, throughput_in_bits
@@ -166,29 +162,23 @@ def encrypt(encrypt_fn):
 def decrypt(decrypt_fn, file_to_open):
     total_time = 0
     data_size = 0 #in bytes
-
-    buffer_size = 65536 # bytes, 64 kb
     
     with open(file_to_open, "rb") as f:
-        p_bytes = f.read(buffer_size)
-        #counter = 0
-        while len(p_bytes) > 0:
-            #get start time
-            start_time = time.time()
+        p_bytes = f.read()
 
-            #decrypt
-            decrypt_fn(p_bytes)
+        #get start time
+        start_time = time.time()
 
-            #get end time
-            end_time = time.time()
+        #decrypt
+        decrypt_fn(p_bytes)
 
-            #add total time and data calculations
-            total_time += (end_time - start_time)
-            
-            data_size += len(p_bytes) # bytes
+        #get end time
+        end_time = time.time()
 
-            #repeat the process for the next set of bytes
-            p_bytes = f.read(buffer_size)
+        #add total time and data calculations
+        total_time += (end_time - start_time)
+        
+        data_size += len(p_bytes) # bytes
 
     throughput_in_bytes, throughput_in_bits = calculate_throughput(total_time, data_size)
     return throughput_in_bytes, throughput_in_bits
