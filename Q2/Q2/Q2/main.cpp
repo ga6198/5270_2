@@ -1,7 +1,10 @@
 #include <iostream>
 #include <des.h>
+#include "files.h"
 #include "modes.h"
 #include "osrng.h"
+#include "hex.h"
+#include <assert.h>
 using namespace std;
 using namespace CryptoPP;
 //using CryptoPP::DES;
@@ -49,6 +52,7 @@ int main()
     //SecByteBlock key(0x0, DES::DEFAULT_KEYLENGTH);
     //prng.GenerateBlock(key, key.size());
 
+    /*
     byte key[DES::DEFAULT_KEYLENGTH];
     byte iv[DES::BLOCKSIZE];
 
@@ -63,11 +67,99 @@ int main()
 
     CBC_Mode<DES>::Encryption e;
     e.SetKeyWithIV(key, sizeof(key), iv);
+    */
 
     //for (size_t i = 0; i < plain.size(); i++)
     //    plain[i] = 'A' + (i % 26);
 
-    cout << plain << endl;
+    //cout << plain << endl;
+
+    //////////////////https://www.cryptopp.com/wiki/StringSink
+    /*
+    byte data[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    string sink;
+
+    HexEncoder encoder;
+    encoder.Attach(new StringSink(sink));
+
+    encoder.Put(data, sizeof(data));
+    encoder.MessageEnd();
+
+    cout << sink << endl;
+    */
+
+    /*
+    byte key[AES::MAX_KEYLENGTH];
+    byte iv[AES::BLOCKSIZE];
+    //vector<byte> plain, cipher, recover;
+    byte plain[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
+    string hold;
+    HexEncoder encoder(new StringSink(hold));
+
+    memset(key, 0x00, sizeof(key));
+    memset(iv, 0x00, sizeof(iv));
+
+
+    HexEncoder enc(new FileSink(cout));
+
+    //string str("Attack at dawn!");
+    //std::copy(str.begin(), str.end(), std::back_inserter(plain));
+
+    cout << "Plain text: ";
+    encoder.Put(plain, sizeof(plain)); //enc.Put(plain.data(), plain.size());
+    encoder.MessageEnd(); //enc.MessageEnd();
+    cout << hold << endl;//cout << endl;
+    */
+
+    //transform text to bytes
+    //string hexstring = "0000000000000000000000000000000000000000000000000000000000000000";
+    string hexstring = "0x00";
+    string decodedhex;
+
+    StringSource ss(hexstring, true, new StringSink(decodedhex));
+    const byte* data = reinterpret_cast<const byte*>(decodedhex.data());
+
+    cout << data << endl;
+
+    //string encodedKey = "1234567890123456789012345678901234567890123456789012345678901234";
+    string encodedKey = "0000000000000000000000000000000000000000000000000000000000000000";
+    string encodedIv = "1111111111222222222233333333334444444444555555555566666666667777";
+    string encodedValues = "0000000000000000000000000000000000000000000000000000000000000000";
+    string key, iv, values;
+
+    StringSource ssk(encodedKey, true /*pumpAll*/,
+        new HexDecoder(
+            new StringSink(key)
+        ) // HexDecoder
+    ); // StringSource
+
+    StringSource ssv(encodedIv, true /*pumpAll*/,
+        new HexDecoder(
+            new StringSink(iv)
+        ) // HexDecoder
+    ); // StringSource
+
+    StringSource ssm(encodedValues, true /*pumpAll*/,
+        new HexDecoder(
+            new StringSink(values)
+        ) // HexDecoder
+    ); // StringSource
+
+    //cout << key << "\n" << iv << endl;
+
+    //CBC_Mode<DES>::Encryption encr;
+    //encr.SetKeyWithIV(key.data())
+
+    //key.data
+
+    const byte* result_key = (const byte*)key.data();
+
+    ECB_Mode<DES>::Encryption enc;
+    //enc.SetKey(key, key.size());
+    enc.SetKeyWithRounds(result_key, key.size(), 16);
+
+    string cipher;
+
 
     return 0;
 }
